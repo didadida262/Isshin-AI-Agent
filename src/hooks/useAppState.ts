@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppConfig, ChatMessage, ChatMode, ChatSession } from "../types";
 import { loadConfig, saveConfig } from "../services/config";
 import { runAgentLoop } from "../agent/graph";
@@ -26,6 +26,8 @@ export function useAppState() {
   const [isLoading, setIsLoading] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [chatMode, setChatMode] = useState<ChatMode>("chat");
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelRef = useRef(false);
 
   const activeSession =
     sessions.find((s) => s.id === activeSessionId) ?? sessions[0];
@@ -80,6 +82,13 @@ export function useAppState() {
     }
   }, [selectedModel]);
 
+  const stopGeneration = useCallback(() => {
+    cancelRef.current = true;
+    abortRef.current?.abort();
+    setIsLoading(false);
+    setAgentRunning(false);
+  }, []);
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (!config.baseUrl.trim() || !config.apiKey.trim()) {
@@ -93,6 +102,8 @@ export function useAppState() {
         return;
       }
       setConfigError(null);
+      cancelRef.current = false;
+      abortRef.current = null;
 
       const sessionId = activeSessionId;
       const userMsg: ChatMessage = {
@@ -165,6 +176,11 @@ export function useAppState() {
         }
       }
 
+      if (cancelRef.current) {
+        setIsLoading(false);
+        return;
+      }
+
       const assistantId = uid();
       appendMessage(sessionId, {
         id: assistantId,
@@ -199,26 +215,62 @@ export function useAppState() {
       ];
 
       try {
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         let full = "";
         for await (const chunk of streamChatCompletion(
           config,
           selectedModel,
           messages,
+          controller.signal,
         )) {
+          if (cancelRef.current) break;
           full += chunk;
-          patchMessage(sessionId, assistantId, { content: full });
+          patchMessage(sessionId, assistantId, { content: full.trimStart() });
         }
-        patchMessage(sessionId, assistantId, {
-          content: full,
-          isStreaming: false,
-        });
+
+        const wasCancelled =
+          cancelRef.current ||
+          controller.signal.aborted;
+
+        if (wasCancelled && !full.trim()) {
+          updateSession(sessionId, (s) => ({
+            ...s,
+            messages: s.messages.filter((m) => m.id !== assistantId),
+          }));
+        } else {
+          patchMessage(sessionId, assistantId, {
+            content: full.trimStart(),
+            isStreaming: false,
+          });
+        }
       } catch (e) {
-        const err = e instanceof Error ? e.message : String(e);
-        patchMessage(sessionId, assistantId, {
-          content: `请求失败：${err}`,
-          isStreaming: false,
-        });
+        if (cancelRef.current || (e instanceof Error && e.name === "AbortError")) {
+          updateSession(sessionId, (s) => {
+            const msg = s.messages.find((m) => m.id === assistantId);
+            if (!msg?.content.trim()) {
+              return {
+                ...s,
+                messages: s.messages.filter((m) => m.id !== assistantId),
+              };
+            }
+            return {
+              ...s,
+              messages: s.messages.map((m) =>
+                m.id === assistantId ? { ...m, isStreaming: false } : m,
+              ),
+            };
+          });
+        } else {
+          const err = e instanceof Error ? e.message : String(e);
+          patchMessage(sessionId, assistantId, {
+            content: `请求失败：${err}`,
+            isStreaming: false,
+          });
+        }
       } finally {
+        abortRef.current = null;
         setIsLoading(false);
       }
     },
@@ -271,6 +323,7 @@ export function useAppState() {
     setConfigError,
     handleSaveConfig,
     sendMessage,
+    stopGeneration,
     newSession,
     deleteSession,
     chatMode,

@@ -7,14 +7,23 @@ export interface ChatCompletionMessage {
   content: string;
 }
 
-export async function testConnection(config: AppConfig): Promise<void> {
-  const url = resolveApiUrl(config.baseUrl, "/models");
+export async function testConnection(
+  config: AppConfig,
+  model: string,
+): Promise<void> {
+  const url = resolveApiUrl(config.baseUrl, "/chat/completions");
   const res = await fetch(url, {
-    method: "GET",
+    method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
       "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: "ping" }],
+      max_tokens: 1,
+      stream: false,
+    }),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -55,6 +64,11 @@ export async function* streamChatCompletion(
   let buffer = "";
 
   while (true) {
+    if (signal?.aborted) {
+      await reader.cancel();
+      return;
+    }
+
     const { done, value } = await reader.read();
     if (done) break;
 

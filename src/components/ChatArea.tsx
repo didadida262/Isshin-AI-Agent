@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { ChatMessage, ChatMode } from "../types";
 import { MessageBubble } from "./MessageBubble";
@@ -7,11 +7,13 @@ import { SmartInput } from "./SmartInput";
 
 interface ChatAreaProps {
   messages: ChatMessage[];
+  activeSessionId: string;
   models: string[];
   selectedModel: string;
   onSelectModel: (m: string) => void;
   onSend: (text: string) => void;
   isLoading: boolean;
+  onStop: () => void;
   configError: string | null;
   chatMode: ChatMode;
   onChatModeChange: (mode: ChatMode) => void;
@@ -19,19 +21,55 @@ interface ChatAreaProps {
 
 export function ChatArea({
   messages,
+  activeSessionId,
   models,
   selectedModel,
   onSelectModel,
   onSend,
   isLoading,
+  onStop,
   configError,
   chatMode,
   onChatModeChange,
 }: ChatAreaProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isPinnedRef = useRef(true);
+  const prevSnapshotRef = useRef({ count: 0, lastId: "" });
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    isPinnedRef.current = true;
+    prevSnapshotRef.current = { count: 0, lastId: "" };
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [activeSessionId]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const threshold = 80;
+    isPinnedRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  }, []);
+
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    const snapshot = prevSnapshotRef.current;
+    const isNewMessage =
+      messages.length !== snapshot.count || last?.id !== snapshot.lastId;
+
+    prevSnapshotRef.current = {
+      count: messages.length,
+      lastId: last?.id ?? "",
+    };
+
+    if (isNewMessage && last?.role === "user") {
+      isPinnedRef.current = true;
+    }
+
+    const el = scrollRef.current;
+    if (!el || !isPinnedRef.current) return;
+
+    el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   return (
@@ -61,7 +99,11 @@ export function ChatArea({
         </motion.div>
       )}
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 space-y-4 overflow-y-auto px-6 py-6"
+      >
         {messages.length === 0 ? (
           <motion.div
             className="flex h-full flex-col items-center justify-center px-4 text-center"
@@ -80,15 +122,14 @@ export function ChatArea({
         ) : (
           messages.map((m) => <MessageBubble key={m.id} message={m} />)
         )}
-        <motion.div ref={bottomRef} />
       </div>
 
       <SmartInput
-        disabled={isLoading}
-        activeModel={selectedModel}
+        isGenerating={isLoading}
         chatMode={chatMode}
         onChatModeChange={onChatModeChange}
         onSend={onSend}
+        onStop={onStop}
       />
     </main>
   );

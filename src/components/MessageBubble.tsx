@@ -6,6 +6,7 @@ import {
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ChatMessage } from "../types";
+import { MarkdownContent } from "./MarkdownContent";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -52,10 +53,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   const isUser = message.role === "user";
+  const displayContent = message.content.trimStart();
+
+  if (!displayContent && !message.isStreaming) {
+    return null;
+  }
 
   return (
     <motion.div
-      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+      className={`flex items-start ${isUser ? "justify-end" : "justify-start"}`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={bubbleSpring}
@@ -66,13 +72,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </div>
       )}
       <motion.div
-        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+        className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           isUser
-            ? "bg-surface-elevated text-white"
-            : "text-white/90"
+            ? "max-w-[75%] whitespace-pre-wrap bg-surface-elevated text-white"
+            : "max-w-[min(85%,48rem)] border border-white/10 bg-surface text-white/90"
         }`}
       >
-        {message.content}
+        {isUser ? (
+          displayContent
+        ) : (
+          <MarkdownContent content={displayContent} />
+        )}
         {message.isStreaming && (
           <motion.span
             className="ml-0.5 inline-block h-4 w-1.5 bg-accent"

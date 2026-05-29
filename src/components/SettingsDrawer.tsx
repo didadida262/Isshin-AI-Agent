@@ -18,6 +18,8 @@ const DEFAULT_BASE_URL = "https://aiplatform.njsrd.com/llm/v1";
 interface SettingsDrawerProps {
   open: boolean;
   config: AppConfig;
+  selectedModel: string;
+  onSelectModel: (model: string) => void;
   onClose: () => void;
   onSave: (config: AppConfig) => void;
 }
@@ -27,6 +29,8 @@ const spring = { type: "spring" as const, stiffness: 300, damping: 30 };
 export function SettingsDrawer({
   open,
   config,
+  selectedModel,
+  onSelectModel,
   onClose,
   onSave,
 }: SettingsDrawerProps) {
@@ -70,26 +74,42 @@ export function SettingsDrawer({
     }
   }, [open, config, syncModels]);
 
+  useEffect(() => {
+    setTestStatus("idle");
+    setTestError("");
+  }, [selectedModel]);
+
   const handleClose = () => {
     onSave(draft);
     onClose();
   };
 
   const removeModel = (id: string) => {
-    setDraft((d) => ({ ...d, models: d.models.filter((m) => m !== id) }));
+    const remaining = draft.models.filter((m) => m !== id);
+    setDraft((d) => ({ ...d, models: remaining }));
+    if (id === selectedModel) {
+      onSelectModel(remaining[0] ?? "");
+    }
   };
 
   const runTest = async () => {
+    if (!selectedModel) return;
     setTestStatus("loading");
     setTestError("");
     try {
-      await testConnection(draft);
+      await testConnection(draft, selectedModel);
       setTestStatus("ok");
     } catch (e) {
       setTestStatus("error");
       setTestError(e instanceof Error ? e.message : String(e));
     }
   };
+
+  const canTestConnection =
+    Boolean(selectedModel) &&
+    draft.models.includes(selectedModel) &&
+    draft.apiKey.trim() &&
+    draft.baseUrl.trim();
 
   return (
     <AnimatePresence>
@@ -199,25 +219,48 @@ export function SettingsDrawer({
                 {modelsStatus === "loading" && draft.models.length === 0 && (
                   <p className="text-xs text-text-muted">正在获取模型列表…</p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  {draft.models.map((m) => (
-                    <motion.span
-                      key={m}
-                      layout
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-surface px-3 py-1 text-xs"
-                    >
-                      {m}
-                      <button
-                        type="button"
-                        onClick={() => removeModel(m)}
-                        className="text-text-dim hover:text-white"
-                        title="从列表移除"
-                      >
-                        <FontAwesomeIcon icon={faXmark} className="text-[10px]" />
-                      </button>
-                    </motion.span>
-                  ))}
-                </div>
+                {draft.models.length > 0 && (
+                  <ul className="h-48 overflow-y-auto rounded-lg border border-white/10 bg-surface/50">
+                    {draft.models.map((m) => {
+                      const isActive = m === selectedModel;
+                      return (
+                        <li
+                          key={m}
+                          className={`flex items-center gap-2 border-b border-white/5 last:border-b-0 ${
+                            isActive ? "bg-accent/10" : "hover:bg-white/5"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => onSelectModel(m)}
+                            title={m}
+                            className={`min-w-0 flex-1 truncate px-3 py-2.5 text-left text-xs transition ${
+                              isActive
+                                ? "font-medium text-accent"
+                                : "text-white"
+                            }`}
+                          >
+                            {isActive && (
+                              <span className="mr-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                            )}
+                            {m}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeModel(m)}
+                            className="shrink-0 px-2 py-2.5 text-text-dim transition hover:text-white"
+                            title="从列表移除"
+                          >
+                            <FontAwesomeIcon
+                              icon={faXmark}
+                              className="text-[10px]"
+                            />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
                 {!draft.apiKey.trim() && (
                   <p className="text-xs text-text-dim">
                     填写 API Key 后将自动拉取可用模型
@@ -229,11 +272,14 @@ export function SettingsDrawer({
                 <button
                   type="button"
                   onClick={runTest}
-                  disabled={testStatus === "loading"}
-                  className="rounded-lg border border-white/10 bg-surface px-4 py-2 text-sm transition hover:border-white/20 disabled:opacity-50"
+                  disabled={testStatus === "loading" || !canTestConnection}
+                  className="rounded-lg border border-white/10 bg-surface px-4 py-2 text-sm transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {testStatus === "loading" ? "测试中…" : "连接测试"}
                 </button>
+                {!selectedModel && draft.models.length > 0 && (
+                  <p className="text-xs text-text-dim">请先选择一个模型</p>
+                )}
                 {testStatus === "ok" && (
                   <p className="flex items-center gap-2 text-sm text-accent">
                     <FontAwesomeIcon icon={faCircleCheck} />

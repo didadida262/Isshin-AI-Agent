@@ -1,24 +1,24 @@
 import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane, faStop } from "@fortawesome/free-solid-svg-icons";
 import type { ChatMode } from "../types";
 import { ModeToggle } from "./ModeToggle";
 
 interface SmartInputProps {
-  disabled?: boolean;
-  activeModel: string;
+  isGenerating?: boolean;
   chatMode: ChatMode;
   onChatModeChange: (mode: ChatMode) => void;
   onSend: (text: string) => void;
+  onStop?: () => void;
 }
 
 export function SmartInput({
-  disabled,
-  activeModel,
+  isGenerating,
   chatMode,
   onChatModeChange,
   onSend,
+  onStop,
 }: SmartInputProps) {
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
@@ -26,11 +26,11 @@ export function SmartInput({
 
   const submit = useCallback(() => {
     const trimmed = text.trim();
-    if (!trimmed || disabled) return;
+    if (!trimmed || isGenerating) return;
     onSend(trimmed);
     setText("");
     ref.current?.focus();
-  }, [text, disabled, onSend]);
+  }, [text, isGenerating, onSend]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -47,21 +47,15 @@ export function SmartInput({
   return (
     <div className="border-t border-white/5 bg-[#0a0a0a] px-4 py-4">
       <motion.div
-        className="mb-3 flex flex-wrap items-center justify-between gap-2"
+        className="mb-3"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
         <ModeToggle
           mode={chatMode}
           onChange={onChatModeChange}
-          disabled={disabled}
+          disabled={isGenerating}
         />
-        {activeModel && (
-          <span className="text-xs text-text-muted">
-            模型 ·{" "}
-            <span className="font-medium text-accent">{activeModel}</span>
-          </span>
-        )}
       </motion.div>
       <motion.div
         className="relative rounded-2xl border bg-surface p-1 transition"
@@ -79,22 +73,33 @@ export function SmartInput({
           ref={ref}
           rows={2}
           value={text}
-          disabled={disabled}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={placeholder}
-          className="w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-white outline-none placeholder:text-text-dim disabled:opacity-50"
+          className="w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-white outline-none placeholder:text-text-dim"
         />
-        <button
-          type="button"
-          onClick={submit}
-          disabled={disabled || !text.trim()}
-          className="absolute bottom-3 right-3 rounded-lg p-2 text-accent transition hover:bg-accent/10 disabled:opacity-30"
-        >
-          <FontAwesomeIcon icon={faPaperPlane} />
-        </button>
+        {isGenerating ? (
+          <button
+            type="button"
+            onClick={onStop}
+            title="停止生成"
+            className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/90"
+          >
+            <FontAwesomeIcon icon={faStop} className="text-[10px]" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!text.trim()}
+            title="发送"
+            className="absolute bottom-3 right-3 rounded-lg p-2 text-accent transition hover:bg-accent/10 disabled:opacity-30"
+          >
+            <FontAwesomeIcon icon={faPaperPlane} />
+          </button>
+        )}
       </motion.div>
     </div>
   );

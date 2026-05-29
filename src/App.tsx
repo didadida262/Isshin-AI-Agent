@@ -20,6 +20,7 @@ export default function App() {
     setConfigError,
     handleSaveConfig,
     sendMessage,
+    stopGeneration,
     newSession,
     deleteSession,
     chatMode,
@@ -42,11 +43,13 @@ export default function App() {
       />
       <ChatArea
         messages={activeSession.messages}
+        activeSessionId={activeSessionId}
         models={config.models}
         selectedModel={selectedModel}
         onSelectModel={setSelectedModel}
         onSend={sendMessage}
         isLoading={isLoading}
+        onStop={stopGeneration}
         configError={configError}
         chatMode={chatMode}
         onChatModeChange={setChatMode}
@@ -54,6 +57,8 @@ export default function App() {
       <SettingsDrawer
         open={settingsOpen}
         config={config}
+        selectedModel={selectedModel}
+        onSelectModel={setSelectedModel}
         onClose={() => setSettingsOpen(false)}
         onSave={handleSaveConfig}
       />
