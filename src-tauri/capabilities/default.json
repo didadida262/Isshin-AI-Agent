@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "default",
+  "description": "Default capabilities",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://*:*" },
+        { "url": "http://*:*" },
+        { "url": "https://aiplatform.njsrd.com/**" },
+        { "url": "https://*.njsrd.com/**" }
+      ]
+    }
+  ]
+}

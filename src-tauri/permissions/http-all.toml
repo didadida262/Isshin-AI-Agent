@@ -1,0 +1,13 @@
+[[permission]]
+identifier = "http-all"
+description = "Allow HTTP/HTTPS requests to any host"
+commands.allow = ["fetch", "fetch_cancel", "fetch_send", "fetch_read_body", "fetch_cancel_body"]
+
+[[permission.scope.allow]]
+url = "https://*:*"
+
+[[permission.scope.allow]]
+url = "http://*:*"
+
+[[permission.scope.allow]]
+url = "https://aiplatform.njsrd.com/**"
