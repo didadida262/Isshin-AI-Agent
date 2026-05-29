@@ -4,9 +4,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane, faStop } from "@fortawesome/free-solid-svg-icons";
 import type { ChatMode } from "../types";
 import { ModeToggle } from "./ModeToggle";
+import { ModelSelector } from "./ModelSelector";
 
 interface SmartInputProps {
   isGenerating?: boolean;
+  models: string[];
+  selectedModel: string;
+  onSelectModel: (model: string) => void;
   chatMode: ChatMode;
   onChatModeChange: (mode: ChatMode) => void;
   onSend: (text: string) => void;
@@ -15,6 +19,9 @@ interface SmartInputProps {
 
 export function SmartInput({
   isGenerating,
+  models,
+  selectedModel,
+  onSelectModel,
   chatMode,
   onChatModeChange,
   onSend,
@@ -47,7 +54,7 @@ export function SmartInput({
   return (
     <div className="border-t border-white/5 bg-[#0a0a0a] px-4 py-4">
       <motion.div
-        className="mb-3"
+        className="mb-3 flex items-center justify-between gap-3"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -55,6 +62,11 @@ export function SmartInput({
           mode={chatMode}
           onChange={onChatModeChange}
           disabled={isGenerating}
+        />
+        <ModelSelector
+          models={models}
+          selected={selectedModel}
+          onSelect={onSelectModel}
         />
       </motion.div>
       <motion.div

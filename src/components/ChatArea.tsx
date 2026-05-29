@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { ChatMessage, ChatMode } from "../types";
 import { MessageBubble } from "./MessageBubble";
-import { ModelSelector } from "./ModelSelector";
 import { SmartInput } from "./SmartInput";
 
 interface ChatAreaProps {
@@ -74,7 +73,7 @@ export function ChatArea({
 
   return (
     <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-black">
-      <header className="relative z-30 flex shrink-0 items-center justify-between gap-4 overflow-visible border-b border-white/5 px-6 py-4">
+      <header className="relative z-30 flex shrink-0 items-center border-b border-white/5 px-6 py-4">
         <motion.h1
           className="shrink-0 text-sm font-medium text-text-muted"
           initial={{ opacity: 0 }}
@@ -82,11 +81,6 @@ export function ChatArea({
         >
           对话
         </motion.h1>
-        <ModelSelector
-          models={models}
-          selected={selectedModel}
-          onSelect={onSelectModel}
-        />
       </header>
 
       {configError && (
@@ -126,6 +120,9 @@ export function ChatArea({
 
       <SmartInput
         isGenerating={isLoading}
+        models={models}
+        selectedModel={selectedModel}
+        onSelectModel={onSelectModel}
         chatMode={chatMode}
         onChatModeChange={onChatModeChange}
         onSend={onSend}

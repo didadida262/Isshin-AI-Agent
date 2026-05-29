@@ -23,9 +23,9 @@ export function ModelSelector({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex max-w-[min(220px,40vw)] items-center gap-2 rounded-lg border border-white/10 bg-surface/80 px-3 py-1.5 text-sm backdrop-blur-md transition hover:border-white/20"
+        className="flex max-w-[min(220px,40vw)] items-center gap-2 rounded-lg border border-white/10 bg-surface/80 px-3 py-1.5 text-xs backdrop-blur-md transition hover:border-white/20"
       >
-        <span className="shrink-0 text-text-muted text-xs">模型</span>
+        <span className="shrink-0 text-text-muted">模型</span>
         <span className="truncate font-medium">{selected || "未选择"}</span>
         <FontAwesomeIcon
           icon={faChevronDown}
@@ -44,12 +44,12 @@ export function ModelSelector({
               onClick={() => setOpen(false)}
             />
             <motion.ul
-              className="absolute right-0 top-full z-50 mt-2 max-h-64 min-w-[220px] max-w-[min(320px,calc(100vw-8rem))] overflow-y-auto overflow-x-hidden rounded-xl border border-white/10 bg-[#161616]/95 shadow-2xl backdrop-blur-xl"
-              initial={{ opacity: 0, y: -8, scale: 0.96 }}
+              className="absolute right-0 bottom-full z-50 mb-2 max-h-64 min-w-[220px] max-w-[min(320px,calc(100vw-8rem))] overflow-y-auto overflow-x-hidden rounded-xl border border-white/10 bg-[#161616]/95 shadow-2xl backdrop-blur-xl"
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.96 }}
+              exit={{ opacity: 0, y: 8, scale: 0.96 }}
               transition={spring}
-              style={{ transformOrigin: "top right" }}
+              style={{ transformOrigin: "bottom right" }}
             >
               {models.length === 0 ? (
                 <li className="px-4 py-3 text-sm leading-relaxed text-text-dim whitespace-normal">
