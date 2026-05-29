@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppConfig, ChatMessage, ChatMode, ChatSession } from "../types";
 import { loadConfig, saveConfig } from "../services/config";
 import { runAgentLoop } from "../agent/graph";
+import { ISSHIN_AGENT_PERSONA } from "../agent/prompt";
 import { streamChatCompletion } from "../services/chat";
 
 function uid() {
@@ -200,6 +201,9 @@ export function useAppState() {
       ];
 
       const systemParts: string[] = [];
+      if (chatMode === "agent") {
+        systemParts.push(ISSHIN_AGENT_PERSONA);
+      }
       if (agentObservation) {
         systemParts.push(
           "以下是通过本地 Agent 读取的真实文件内容，请基于此回答用户：\n" +
