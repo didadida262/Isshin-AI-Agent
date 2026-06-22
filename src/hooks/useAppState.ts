@@ -3,7 +3,6 @@ import type { AppConfig, ChatMessage, ChatMode, ChatSession } from "../types";
 import { loadConfig, saveConfig } from "../services/config";
 import { runAgentLoop } from "../agent/graph";
 import { ISSHIN_AGENT_PERSONA } from "../agent/prompt";
-import { stripThinkingContent } from "../utils/messageContent";
 import { streamChatCompletion } from "../services/chat";
 
 function uid() {
@@ -232,23 +231,21 @@ export function useAppState() {
         )) {
           if (cancelRef.current) break;
           full += chunk;
-          patchMessage(sessionId, assistantId, {
-            content: stripThinkingContent(full),
-          });
+          patchMessage(sessionId, assistantId, { content: full.trimStart() });
         }
 
         const wasCancelled =
           cancelRef.current ||
           controller.signal.aborted;
 
-        if (wasCancelled && !stripThinkingContent(full).trim()) {
+        if (wasCancelled && !full.trim()) {
           updateSession(sessionId, (s) => ({
             ...s,
             messages: s.messages.filter((m) => m.id !== assistantId),
           }));
         } else {
           patchMessage(sessionId, assistantId, {
-            content: stripThinkingContent(full),
+            content: full.trimStart(),
             isStreaming: false,
           });
         }
