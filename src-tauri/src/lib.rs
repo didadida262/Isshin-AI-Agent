@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use tauri::Manager;
 use walkdir::{DirEntry, WalkDir};
 
 mod workspace;
@@ -249,6 +250,13 @@ fn read_project_file(filename: String) -> Result<FileReadResult, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
+        .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                let icon = tauri::image::Image::new(include_bytes!("../icons/32x32.png"), 32, 32);
+                let _ = window.set_icon(icon);
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             load_config,
             save_config,

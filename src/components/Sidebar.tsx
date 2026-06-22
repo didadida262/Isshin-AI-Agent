@@ -37,7 +37,7 @@ export function Sidebar({
         <img
           src={logo}
           alt="Isshin AI Agent"
-          className="h-8 w-8 shrink-0 rounded-lg border border-white/15 object-cover"
+          className="h-9 w-9 shrink-0 rounded-md border border-white/10 bg-white object-contain p-0.5"
         />
         <span className="min-w-0 flex-1 text-sm font-bold leading-tight tracking-wide text-white">
           Isshin AI Agent
