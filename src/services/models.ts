@@ -1,4 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { llmLog } from "./llmLog";
 
 const MODELS_API =
   "https://aiplatform.njsrd.com/nexus/api/api-keys/models";
@@ -55,15 +56,37 @@ export async function fetchAvailableModels(apiKey: string): Promise<string[]> {
   if (!key) throw new Error("请先填写 API Key");
 
   const url = `${MODELS_API}?api_key=${encodeURIComponent(key)}`;
+  const headers = { Accept: "application/json" };
+  const logId = llmLog.start({
+    label: "同步模型列表",
+    url: `${MODELS_API}?api_key=<masked>`,
+    method: "GET",
+    headers,
+  });
+  const startedAt = performance.now();
+
   const res = await fetch(url, {
     method: "GET",
-    headers: { Accept: "application/json" },
+    headers,
   });
 
   const text = await res.text();
+  const durationMs = Math.round(performance.now() - startedAt);
   if (!res.ok) {
+    llmLog.fail(
+      logId,
+      { status: res.status, body: text, durationMs },
+      parseErrorMessage(text) || `HTTP ${res.status}`,
+    );
     throw new Error(parseErrorMessage(text) || `HTTP ${res.status}`);
   }
+
+  llmLog.complete(logId, {
+    status: res.status,
+    statusText: res.statusText,
+    body: text,
+    durationMs,
+  });
 
   const data = JSON.parse(text) as unknown;
   const models = parseModelsPayload(data);

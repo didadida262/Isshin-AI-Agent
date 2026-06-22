@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import type { ChatMessage, ChatMode } from "../types";
 import { MessageBubble } from "./MessageBubble";
 import { SmartInput } from "./SmartInput";
+import { LlmConsoleFab } from "./LlmConsoleFab";
 
 interface ChatAreaProps {
   messages: ChatMessage[];
@@ -72,7 +73,7 @@ export function ChatArea({
   }, [messages]);
 
   return (
-    <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-black">
+    <main className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-black">
       <header className="relative z-30 flex shrink-0 items-center border-b border-white/5 px-6 py-4">
         <motion.h1
           className="shrink-0 text-sm font-medium text-text-muted"
@@ -127,6 +128,7 @@ export function ChatArea({
         onSend={onSend}
         onStop={onStop}
       />
+      <LlmConsoleFab />
     </main>
   );
 }
