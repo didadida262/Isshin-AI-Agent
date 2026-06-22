@@ -4,6 +4,7 @@ import { loadConfig, saveConfig } from "../services/config";
 import { runAgentLoop } from "../agent/graph";
 import { ISSHIN_AGENT_PERSONA } from "../agent/prompt";
 import { streamChatCompletion } from "../services/chat";
+import { sanitizeAssistantContent } from "../utils/messageContent";
 
 function uid() {
   return crypto.randomUUID();
@@ -212,7 +213,7 @@ export function useAppState() {
       }
 
       const agentContextPrefix =
-        "【重要】本地 Agent 工具已在本机执行完毕，结果见下方。你必须直接根据结果用自然语言回答用户，禁止输出 [TOOL_CALL]、list_directory、function_call 等任何工具调用语法，禁止让用户自行执行终端命令。\n\n";
+        "【重要】本地 Agent 工具已在本机执行完毕，结果见下方。你必须直接根据结果用自然语言回答用户，禁止输出 [TOOL_CALL]、<function_calls>、function_call 等任何工具调用语法，禁止让用户自行执行终端命令。\n\n";
 
       if (agentObservation) {
         systemParts.push(
@@ -236,7 +237,10 @@ export function useAppState() {
           .filter((m) => m.role === "user" || m.role === "assistant")
           .map((m) => ({
             role: m.role as "user" | "assistant",
-            content: m.content,
+            content:
+              m.role === "assistant"
+                ? sanitizeAssistantContent(m.content)
+                : m.content,
           })),
         { role: "user" as const, content: userContentForApi },
       ];
@@ -251,21 +255,28 @@ export function useAppState() {
         )) {
           if (cancelRef.current) break;
           full += chunk;
-          patchMessage(sessionId, assistantId, { content: full.trimStart() });
+          const visible = sanitizeAssistantContent(full);
+          patchMessage(sessionId, assistantId, { content: visible });
         }
 
         const wasCancelled =
           cancelRef.current ||
           requestController.signal.aborted;
 
-        if (wasCancelled && !full.trim()) {
+        const sanitized = sanitizeAssistantContent(full);
+        const fallback =
+          agentObservation && !sanitized.trim()
+            ? "模型未生成有效文字回复（可能输出了无效工具标记）。请重试；若持续出现，可尝试更换模型。"
+            : sanitized;
+
+        if (wasCancelled && !fallback.trim()) {
           updateSession(sessionId, (s) => ({
             ...s,
             messages: s.messages.filter((m) => m.id !== assistantId),
           }));
         } else {
           patchMessage(sessionId, assistantId, {
-            content: full.trimStart(),
+            content: fallback,
             isStreaming: false,
           });
         }

@@ -9,7 +9,8 @@ import type { AgentGraphState, AgentStep } from "./schema";
 import { WORKSPACE_ROOT } from "./schema";
 import {
   AGENT_LOOP_TIMEOUT_MS,
-  AGENT_MAX_STEPS,
+  AGENT_MAX_ROUNDS,
+  AGENT_MAX_TOOL_CALLS,
   AGENT_STEP_TIMEOUT_MS,
   ALLOWED_TOOL_NAMES,
   ROUTER_SYSTEM_PROMPT,
@@ -63,18 +64,26 @@ function formatObservation(steps: AgentStep[]): string {
     (s, i) =>
       `## 步骤 ${i + 1}：\`${s.toolName}\`\n\n${s.error ? `**失败**：${s.error}` : s.resultMarkdown}`,
   );
-  return [
+  const body = [
     `**Agent 工作区执行记录**（\`${WORKSPACE_ROOT}\`）`,
-    `共 ${steps.length} 步工具调用：`,
+    `共 ${steps.length} 次工具调用：`,
     "",
     parts.join("\n\n"),
   ].join("\n");
+
+  const MAX_CHARS = 48_000;
+  if (body.length <= MAX_CHARS) return body;
+  return `${body.slice(0, MAX_CHARS)}\n\n…（观察结果过长已截断，原文 ${body.length} 字符）`;
+}
+
+function toolCallSignature(name: string, args: Record<string, unknown>): string {
+  return `${name}:${JSON.stringify(args)}`;
 }
 
 /**
  * Phase 1–3：LLM Tool Calling + 多步 ReAct + 护栏
  * - 路由器：LLM 选择工具与参数
- * - 循环：最多 AGENT_MAX_STEPS 步
+ * - 循环：最多 AGENT_MAX_ROUNDS 轮 LLM、AGENT_MAX_TOOL_CALLS 次工具执行
  * - 护栏：工具白名单、路径清洗、超时、失败降级
  */
 export async function runAgentLoop(
@@ -88,19 +97,28 @@ export async function runAgentLoop(
   const loopSignal = mergeSignal(parentSignal, AGENT_LOOP_TIMEOUT_MS);
   const steps: AgentStep[] = [];
   const reactMessages: RouterMessage[] = [];
+  const seenToolCalls = new Set<string>();
   let thought: string | null = null;
   let errorMessage: string | null = null;
+  let roundCount = 0;
 
   const ctx = { userMessage, recentMessages };
 
   try {
-    for (let step = 0; step < AGENT_MAX_STEPS; step++) {
+    for (let round = 0; round < AGENT_MAX_ROUNDS; round++) {
+      roundCount = round + 1;
       if (loopSignal.aborted) {
         errorMessage = "Agent 执行超时或被取消";
         break;
       }
 
-      onPhase?.("thought", `第 ${step + 1} 步：LLM 规划工具…`);
+      if (steps.length >= AGENT_MAX_TOOL_CALLS) {
+        errorMessage =
+          errorMessage ?? `已达工具调用上限（${AGENT_MAX_TOOL_CALLS} 次）`;
+        break;
+      }
+
+      onPhase?.("thought", `第 ${round + 1} 轮：LLM 规划工具…`);
 
       const messages = buildRouterMessages(
         userMessage,
@@ -134,7 +152,7 @@ export async function runAgentLoop(
             routedBy: "none",
           };
         }
-        errorMessage = `第 ${step + 1} 步路由失败：${err}`;
+        errorMessage = `第 ${round + 1} 轮路由失败：${err}`;
         break;
       }
 
@@ -151,9 +169,27 @@ export async function runAgentLoop(
         tool_calls: response.tool_calls,
       });
 
+      let hitToolCap = false;
+
       for (const call of response.tool_calls) {
+        if (steps.length >= AGENT_MAX_TOOL_CALLS) {
+          errorMessage =
+            errorMessage ?? `已达工具调用上限（${AGENT_MAX_TOOL_CALLS} 次）`;
+          hitToolCap = true;
+          break;
+        }
+
         const toolName = call.function.name;
         const args = parseToolArguments(call.function.arguments);
+        const sig = toolCallSignature(toolName, args);
+
+        if (seenToolCalls.has(sig)) {
+          errorMessage =
+            errorMessage ?? "检测到重复工具调用，已提前结束路由";
+          hitToolCap = true;
+          break;
+        }
+        seenToolCalls.add(sig);
 
         onPhase?.("action", toolName);
 
@@ -199,14 +235,17 @@ export async function runAgentLoop(
             : resultJson,
         });
       }
+
+      if (hitToolCap) break;
     }
 
-    if (steps.length >= AGENT_MAX_STEPS && reactMessages.length > 0) {
-      const lastAssistant = reactMessages[reactMessages.length - 2];
-      if (lastAssistant?.role === "assistant" && lastAssistant.tool_calls) {
-        errorMessage =
-          errorMessage ?? `已达最大步数限制（${AGENT_MAX_STEPS} 步）`;
-      }
+    if (
+      roundCount >= AGENT_MAX_ROUNDS &&
+      steps.length > 0 &&
+      !thought
+    ) {
+      errorMessage =
+        errorMessage ?? `已达最大路由轮数（${AGENT_MAX_ROUNDS} 轮）`;
     }
   } catch (e) {
     errorMessage = e instanceof Error ? e.message : String(e);
@@ -222,7 +261,7 @@ export async function runAgentLoop(
   const summaryThought =
     thought ??
     (shouldAct
-      ? `已完成 ${steps.length} 步工具调用：${steps.map((s) => s.toolName).join(" → ")}`
+      ? `已完成 ${roundCount} 轮路由、${steps.length} 次工具：${steps.map((s) => s.toolName).join(" → ")}`
       : "用户消息未触发工作区工具");
 
   return {

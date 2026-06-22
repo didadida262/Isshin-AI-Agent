@@ -66,14 +66,27 @@ export function stripThinkingContent(raw: string): string {
 
 /** 过滤 minimax 等模型幻觉输出的假工具调用标记 */
 export function stripFakeToolCalls(raw: string): string {
-  return raw
+  let result = raw
     .replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/gi, "")
+    .replace(/\[TOOL_CALL\][\s\S]*/gi, "")
     .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "")
+    .replace(/<function_calls>[\s\S]*?<\/function_calls>/gi, "")
     .replace(/<invoke[\s\S]*?<\/invoke>/gi, "")
     .replace(/\{tool\s*=>\s*"[^"]*"[\s\S]*?\}/g, "")
+    .replace(/<\/?function_calls>/gi, "")
+    .replace(/<\/?tool_call>/gi, "")
+    .replace(/\[\/TOOL_CALL\]/gi, "")
+    .replace(/\[TOOL_CALL\]/gi, "")
     .replace(/我来帮你查看[^。\n]*[：:]\s*$/m, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+  // 剥掉只剩工具壳、没有实质内容的回复
+  if (/^(我来|好的|让我|正在)[^。]{0,40}(查看|探索|分析|搜索)/.test(result) && result.length < 120) {
+    return "";
+  }
+
+  return result;
 }
 
 /** 展示用：去除思考块与假工具调用 */
