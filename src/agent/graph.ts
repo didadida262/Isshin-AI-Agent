@@ -19,6 +19,7 @@ export async function runAgentLoop(
     fileResult: null,
     listResult: null,
     searchResult: null,
+    analyzeResult: null,
     errorMessage: null,
     phase: "idle",
     observation: null,
@@ -35,7 +36,9 @@ export async function runAgentLoop(
   const actionDetail =
     state.actionType === "search"
       ? state.searchQuery ?? undefined
-      : state.targetPath ?? undefined;
+      : state.actionType === "analyze"
+        ? state.targetPath || state.searchQuery || undefined
+        : state.targetPath ?? undefined;
   onPhase?.("action", actionDetail);
   state = { ...state, ...(await actionNode(state)) };
   onPhase?.(state.phase);

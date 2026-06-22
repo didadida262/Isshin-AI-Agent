@@ -127,25 +127,28 @@ export function useAppState() {
 
       let agentObservation: string | null = null;
 
-      if (chatMode === "agent") {
-        setAgentRunning(true);
-        const agentStatusId = uid();
+      setAgentRunning(true);
+      const agentStatusId = uid();
+      const showAgentUi = chatMode === "agent";
+      if (showAgentUi) {
         appendMessage(sessionId, {
           id: agentStatusId,
           role: "agent-status",
           content: "正在分析意图…",
           agentPhase: "thought",
         });
+      }
 
-        try {
-          const recentForAgent = activeSession.messages
-            .filter((m) => m.role === "user" || m.role === "assistant")
-            .slice(-6)
-            .map((m) => m.content);
+      try {
+        const recentForAgent = activeSession.messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .slice(-6)
+          .map((m) => m.content);
 
-          const agentResult = await runAgentLoop(
-            text,
-            (phase, detail) => {
+        const agentResult = await runAgentLoop(
+          text,
+          (phase, detail) => {
+            if (!showAgentUi) return;
             const labels: Record<string, string> = {
               thought: detail ?? "意图识别中…",
               action:
@@ -167,12 +170,13 @@ export function useAppState() {
                       : "thought",
               content: labels[phase] ?? phase,
             });
-            },
-            recentForAgent,
-          );
+          },
+          recentForAgent,
+        );
 
-          agentObservation = agentResult.observation;
+        agentObservation = agentResult.observation;
 
+        if (showAgentUi) {
           if (agentResult.shouldAct || agentObservation) {
             patchMessage(sessionId, agentStatusId, {
               agentPhase: "done",
@@ -184,9 +188,12 @@ export function useAppState() {
               messages: s.messages.filter((m) => m.id !== agentStatusId),
             }));
           }
-        } finally {
-          setAgentRunning(false);
+        } else if (agentResult.shouldAct && !agentObservation) {
+          // 对话模式下触发了工具但未拿到结果，仍提示用户
+          agentObservation = agentResult.thought ?? null;
         }
+      } finally {
+        setAgentRunning(false);
       }
 
       if (cancelRef.current) {
@@ -202,32 +209,39 @@ export function useAppState() {
         isStreaming: true,
       });
 
-      const history = [
+      const systemParts: string[] = [];
+      if (chatMode === "agent") {
+        systemParts.push(ISSHIN_AGENT_PERSONA);
+      }
+
+      const agentContextPrefix =
+        "【重要】本地 Agent 工具已在本机执行完毕，结果见下方。你必须直接根据结果用自然语言回答用户，禁止输出 [TOOL_CALL]、list_directory、function_call 等任何工具调用语法，禁止让用户自行执行终端命令。\n\n";
+
+      if (agentObservation) {
+        systemParts.push(
+          (chatMode === "agent"
+            ? "以下是通过本地 Agent 从工作区读取的真实内容（可能包含多个源码文件），请基于代码梳理调用链、数据流与关键函数，解释用户问题的具体实现逻辑，不要只复述 README 或泛泛而谈：\n"
+            : "以下是通过本地 Agent 从工作区读取的真实数据，你必须基于此直接回答：\n") +
+            agentContextPrefix +
+            agentObservation,
+        );
+      }
+
+      const userContentForApi = agentObservation
+        ? `${text}\n\n---\n${agentContextPrefix}${agentObservation}`
+        : text;
+
+      const messages = [
+        ...(systemParts.length
+          ? [{ role: "system" as const, content: systemParts.join("\n\n") }]
+          : []),
         ...activeSession.messages
           .filter((m) => m.role === "user" || m.role === "assistant")
           .map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
           })),
-        { role: "user" as const, content: text },
-      ];
-
-      const systemParts: string[] = [];
-      if (chatMode === "agent") {
-        systemParts.push(ISSHIN_AGENT_PERSONA);
-      }
-      if (agentObservation) {
-        systemParts.push(
-          "以下是通过本地 Agent 读取的真实文件内容，请基于此回答用户：\n" +
-            agentObservation,
-        );
-      }
-
-      const messages = [
-        ...(systemParts.length
-          ? [{ role: "system" as const, content: systemParts.join("\n") }]
-          : []),
-        ...history,
+        { role: "user" as const, content: userContentForApi },
       ];
 
       try {

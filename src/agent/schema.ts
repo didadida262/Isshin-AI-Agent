@@ -2,7 +2,7 @@
 
 export type AgentPhase = "idle" | "thought" | "action" | "observation" | "done";
 
-export type AgentActionType = "read" | "list" | "search";
+export type AgentActionType = "read" | "list" | "search" | "analyze";
 
 export interface AgentGraphState {
   userMessage: string;
@@ -23,6 +23,12 @@ export interface AgentGraphState {
     matches: Array<{ path: string; line: number; text: string }>;
     truncated: boolean;
   } | null;
+  analyzeResult: {
+    project: string;
+    query: string;
+    files: Array<{ path: string; content: string }>;
+    searchTerms: string[];
+  } | null;
   errorMessage: string | null;
   phase: AgentPhase;
   observation: string | null;
@@ -42,6 +48,10 @@ export const AGENT_KEYWORDS = [
   "帮我列",
   "给我列",
   "有哪些",
+  "有哪些项目",
+  "文件夹",
+  "work",
+  "工作区",
   "多少个项目",
   "几个项目",
   "目录",
@@ -49,6 +59,16 @@ export const AGENT_KEYWORDS = [
   "search",
   "grep",
   "find",
+  "如何",
+  "怎么",
+  "怎样",
+  "逻辑",
+  "实现",
+  "生成",
+  "流程",
+  "原理",
+  "源码",
+  "源代码",
 ];
 
 export const FILE_KEYWORD_MAP: Record<string, string> = {

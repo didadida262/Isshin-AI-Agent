@@ -96,7 +96,7 @@ export function ChatArea({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 space-y-4 overflow-y-auto px-6 py-6"
+        className="flex-1 space-y-4 overflow-y-auto px-6 py-4"
       >
         {messages.length === 0 ? (
           <motion.div
@@ -109,7 +109,11 @@ export function ChatArea({
             </div>
           </motion.div>
         ) : (
-          messages.map((m) => <MessageBubble key={m.id} message={m} />)
+          <div className="flex min-h-full flex-col justify-end space-y-4">
+            {messages.map((m) => (
+              <MessageBubble key={m.id} message={m} />
+            ))}
+          </div>
         )}
       </div>
 

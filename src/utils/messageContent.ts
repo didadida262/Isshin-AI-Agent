@@ -63,3 +63,20 @@ export function stripThinkingContent(raw: string): string {
 
   return raw.trimStart();
 }
+
+/** 过滤 minimax 等模型幻觉输出的假工具调用标记 */
+export function stripFakeToolCalls(raw: string): string {
+  return raw
+    .replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/gi, "")
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "")
+    .replace(/<invoke[\s\S]*?<\/invoke>/gi, "")
+    .replace(/\{tool\s*=>\s*"[^"]*"[\s\S]*?\}/g, "")
+    .replace(/我来帮你查看[^。\n]*[：:]\s*$/m, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** 展示用：去除思考块与假工具调用 */
+export function sanitizeAssistantContent(raw: string): string {
+  return stripFakeToolCalls(stripThinkingContent(raw));
+}

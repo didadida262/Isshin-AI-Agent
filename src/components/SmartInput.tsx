@@ -83,14 +83,14 @@ export function SmartInput({
       >
         <textarea
           ref={ref}
-          rows={4}
+          rows={3}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={placeholder}
-          className="min-h-24 w-full resize-none bg-transparent px-3 py-2.5 pr-10 text-sm text-white outline-none placeholder:text-text-dim"
+          className="min-h-[4.5rem] w-full resize-none bg-transparent px-3 py-2 pr-10 text-sm text-white outline-none placeholder:text-text-dim"
         />
         {isGenerating ? (
           <button
