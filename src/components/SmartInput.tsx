@@ -46,11 +46,6 @@ export function SmartInput({
     }
   };
 
-  const placeholder =
-    chatMode === "agent"
-      ? "Agent 模式：可读取/搜索 ~/Desktop/work 下文件，如「搜索 read_work_file」「读取 src/agent/nodes.ts」"
-      : "输入消息… Shift+Enter 换行，Enter 发送";
-
   return (
     <div className="border-t border-white/5 bg-[#0a0a0a] px-4 py-3">
       <motion.div
@@ -89,7 +84,6 @@ export function SmartInput({
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder={placeholder}
           className="min-h-[4.5rem] w-full resize-none bg-transparent px-3 py-2 pr-10 text-sm text-white outline-none placeholder:text-text-dim"
         />
         {isGenerating ? (
