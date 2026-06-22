@@ -6,6 +6,7 @@ import {
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ChatMessage } from "../types";
+import { stripThinkingContent } from "../utils/messageContent";
 import { MarkdownContent } from "./MarkdownContent";
 
 interface MessageBubbleProps {
@@ -53,7 +54,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   const isUser = message.role === "user";
-  const displayContent = message.content.trimStart();
+  const displayContent = isUser
+    ? message.content.trimStart()
+    : stripThinkingContent(message.content);
 
   if (!displayContent && !message.isStreaming) {
     return null;

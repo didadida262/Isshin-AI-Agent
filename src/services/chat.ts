@@ -84,9 +84,12 @@ export async function* streamChatCompletion(
 
       try {
         const parsed = JSON.parse(data) as {
-          choices?: Array<{ delta?: { content?: string } }>;
+          choices?: Array<{
+            delta?: { content?: string; reasoning_content?: string };
+          }>;
         };
         const delta = parsed.choices?.[0]?.delta?.content;
+        // reasoning_content 为模型思考过程，不展示给用户
         if (delta) yield delta;
       } catch {
         /* skip malformed SSE chunk */
