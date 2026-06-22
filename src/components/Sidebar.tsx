@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGear,
@@ -18,6 +18,8 @@ interface SidebarProps {
   onDeleteSession: (id: string) => void;
   onOpenSettings: () => void;
 }
+
+const spring = { type: "spring" as const, stiffness: 400, damping: 30 };
 
 export function Sidebar({
   sessions,
@@ -56,40 +58,53 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
-        {sessions.map((s) => (
-          <div
-            key={s.id}
-            className={`group flex items-center gap-0.5 rounded-lg transition ${
-              s.id === activeSessionId
-                ? "bg-surface-elevated"
-                : "hover:bg-white/5"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => onSelectSession(s.id)}
-              className={`min-w-0 flex-1 truncate px-3 py-2 text-left text-sm transition ${
-                s.id === activeSessionId
-                  ? "text-white"
-                  : "text-text-muted group-hover:text-white"
-              }`}
-            >
-              {s.title}
-            </button>
-            <button
-              type="button"
-              onClick={() => onDeleteSession(s.id)}
-              title="删除会话"
-              className={`mr-1 shrink-0 rounded p-1.5 text-text-dim transition hover:bg-red-500/10 hover:text-red-400 ${
-                s.id === activeSessionId
-                  ? "opacity-70"
-                  : "opacity-0 group-hover:opacity-70"
-              }`}
-            >
-              <FontAwesomeIcon icon={faTrash} className="text-xs" />
-            </button>
-          </div>
-        ))}
+        <AnimatePresence initial={false}>
+          {sessions.map((s) => {
+            const isActive = s.id === activeSessionId;
+
+            return (
+              <motion.div
+                key={s.id}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16, height: 0, marginTop: 0 }}
+                transition={spring}
+                className="group relative flex items-center gap-0.5 overflow-hidden rounded-lg hover:bg-white/5"
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="active-session"
+                    className="absolute inset-0 rounded-lg bg-surface-elevated"
+                    transition={spring}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => onSelectSession(s.id)}
+                  className={`relative z-10 min-w-0 flex-1 truncate px-3 py-2 text-left text-sm transition ${
+                    isActive
+                      ? "text-white"
+                      : "text-text-muted group-hover:text-white"
+                  }`}
+                >
+                  {s.title}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeleteSession(s.id)}
+                  title="删除会话"
+                  className={`relative z-10 mr-1 shrink-0 rounded p-1.5 text-text-dim transition hover:bg-red-500/10 hover:text-red-400 ${
+                    isActive
+                      ? "opacity-70"
+                      : "opacity-0 group-hover:opacity-70"
+                  }`}
+                >
+                  <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </nav>
 
       <motion.div
