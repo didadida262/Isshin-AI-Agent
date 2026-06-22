@@ -44,7 +44,7 @@ export function ModelSelector({
               onClick={() => setOpen(false)}
             />
             <motion.ul
-              className="absolute right-0 bottom-full z-50 mb-2 max-h-64 min-w-[220px] max-w-[min(320px,calc(100vw-8rem))] overflow-y-auto overflow-x-hidden rounded-xl border border-white/10 bg-[#161616]/95 shadow-2xl backdrop-blur-xl"
+              className="absolute right-0 bottom-full z-50 mb-2 max-h-64 min-w-[220px] max-w-[min(320px,calc(100vw-8rem))] overflow-y-auto overflow-x-hidden rounded-lg border border-white/10 bg-[#161616]/95 shadow-2xl backdrop-blur-xl"
               initial={{ opacity: 0, y: 8, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.96 }}

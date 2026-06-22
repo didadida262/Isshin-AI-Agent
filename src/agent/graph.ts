@@ -6,13 +6,19 @@ import type { AgentGraphState } from "./schema";
 export async function runAgentLoop(
   userMessage: string,
   onPhase?: (phase: AgentGraphState["phase"], detail?: string) => void,
+  recentMessages: string[] = [],
 ): Promise<AgentGraphState> {
   let state: AgentGraphState = {
     userMessage,
+    recentMessages,
     thought: null,
     shouldAct: false,
-    targetFile: null,
+    actionType: null,
+    targetPath: null,
+    searchQuery: null,
     fileResult: null,
+    listResult: null,
+    searchResult: null,
     errorMessage: null,
     phase: "idle",
     observation: null,
@@ -26,7 +32,11 @@ export async function runAgentLoop(
     return state;
   }
 
-  onPhase?.("action", state.targetFile ?? undefined);
+  const actionDetail =
+    state.actionType === "search"
+      ? state.searchQuery ?? undefined
+      : state.targetPath ?? undefined;
+  onPhase?.("action", actionDetail);
   state = { ...state, ...(await actionNode(state)) };
   onPhase?.(state.phase);
 

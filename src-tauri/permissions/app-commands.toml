@@ -1,0 +1,11 @@
+[[permission]]
+identifier = "allow-app-commands"
+description = "Allow config load/save and Agent workspace read/list/search commands"
+commands.allow = [
+  "load_config",
+  "save_config",
+  "read_work_file",
+  "list_work_dir",
+  "search_work_text",
+  "read_project_file",
+]

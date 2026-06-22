@@ -29,7 +29,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         transition={bubbleSpring}
       >
         <motion.div
-          className="flex max-w-lg items-start gap-3 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm"
+          className="flex max-w-lg items-start gap-3 rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 text-sm"
           animate={
             message.agentPhase !== "done"
               ? { borderColor: ["rgba(0,255,102,0.2)", "rgba(0,255,102,0.5)", "rgba(0,255,102,0.2)"] }
@@ -75,7 +75,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </div>
       )}
       <motion.div
-        className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+        className={`rounded-lg px-4 py-3 text-sm leading-relaxed ${
           isUser
             ? "max-w-[75%] whitespace-pre-wrap bg-surface-elevated text-white"
             : "max-w-[min(85%,48rem)] border border-white/10 bg-surface text-white/90"

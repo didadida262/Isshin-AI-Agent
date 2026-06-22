@@ -138,10 +138,20 @@ export function useAppState() {
         });
 
         try {
-          const agentResult = await runAgentLoop(text, (phase, detail) => {
+          const recentForAgent = activeSession.messages
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .slice(-6)
+            .map((m) => m.content);
+
+          const agentResult = await runAgentLoop(
+            text,
+            (phase, detail) => {
             const labels: Record<string, string> = {
               thought: detail ?? "意图识别中…",
-              action: `正在读取 ${detail ?? "项目文件"}…`,
+              action:
+                detail
+                  ? `正在执行本地工具：${detail}…`
+                  : "正在访问本地工作区…",
               observation: "整理观察结果…",
               done: "Agent 执行完成",
               idle: "待命",
@@ -157,7 +167,9 @@ export function useAppState() {
                       : "thought",
               content: labels[phase] ?? phase,
             });
-          });
+            },
+            recentForAgent,
+          );
 
           agentObservation = agentResult.observation;
 

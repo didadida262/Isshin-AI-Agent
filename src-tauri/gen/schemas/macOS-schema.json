@@ -315,6 +315,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Allow config load/save and Agent workspace read/list/search commands",
+          "type": "string",
+          "const": "allow-app-commands",
+          "markdownDescription": "Allow config load/save and Agent workspace read/list/search commands"
+        },
+        {
           "description": "Allow HTTP/HTTPS requests to any host",
           "type": "string",
           "const": "http-all",

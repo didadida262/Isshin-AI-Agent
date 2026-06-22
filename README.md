@@ -6,7 +6,7 @@
 
 - 全局模型配置（Base URL、API Key、模型白名单）
 - 模型切换与 OpenAI 兼容流式对话
-- Thought → Action → Observation 本地 Agent（读取 `package.json` / `.gitignore`）
+- Thought → Action → Observation 本地 Agent（读取 / 列目录 / 搜索 `~/Desktop/work` 工作区）
 - 配置持久化至本地 `config.json`（由 Rust 写入用户目录）
 
 ## 技术栈
@@ -39,11 +39,15 @@ npm run build:app
 
 ## Agent 触发示例
 
-在对话中输入包含以下关键词的消息：
+工作区限定为 **`/Users/miles_wang/Desktop/work`**，自动排除 `node_modules`、`.git`、`Library` 等目录。
 
-- `查看文件` / `读取项目` / `读取文件` / `查看项目`
+| 能力 | 示例 |
+|------|------|
+| 读文件 | `读取 src/agent/nodes.ts`、`查看 README.md` |
+| 列目录 | `列出目录 src/agent` |
+| 搜索 | `搜索 read_work_file`、`查找 AGENT_KEYWORDS` |
 
-Agent 将通过 Tauri IPC 读取当前工作目录下的 `package.json` 或 `.gitignore`，并将内容注入 LLM 上下文。
+Agent 将通过 Tauri IPC 访问沙箱工作区，并将结果注入 LLM 上下文。
 
 ## 项目结构
 

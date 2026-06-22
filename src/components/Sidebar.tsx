@@ -3,11 +3,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGear,
   faPlus,
-  faRobot,
   faSpinner,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ChatSession } from "../types";
+import logo from "../assets/logo.png";
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -37,7 +37,11 @@ export function Sidebar({
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <FontAwesomeIcon icon={faRobot} className="text-accent text-xl" />
+        <img
+          src={logo}
+          alt="Isshin AI Agent"
+          className="h-8 w-8 shrink-0 rounded-lg border border-white/15 object-cover"
+        />
         <span className="min-w-0 flex-1 text-sm font-bold leading-tight tracking-wide text-white">
           Isshin AI Agent
         </span>
