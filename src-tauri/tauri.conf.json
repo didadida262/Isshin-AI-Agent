@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "com.isshin.ai-agent",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev:web",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"

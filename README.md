@@ -22,13 +22,19 @@
 
 ```bash
 npm install
-npm run tauri dev
+npm run dev
+```
+
+仅调试前端（浏览器，无 Tauri 能力）：
+
+```bash
+npm run dev:web
 ```
 
 ## 构建
 
 ```bash
-npm run tauri build
+npm run build:app
 ```
 
 ## Agent 触发示例
