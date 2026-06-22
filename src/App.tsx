@@ -14,7 +14,6 @@ export default function App() {
     setSelectedModel,
     settingsOpen,
     setSettingsOpen,
-    agentRunning,
     isLoading,
     configError,
     setConfigError,
@@ -32,7 +31,6 @@ export default function App() {
       <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
-        agentRunning={agentRunning}
         onSelectSession={setActiveSessionId}
         onNewSession={newSession}
         onDeleteSession={deleteSession}

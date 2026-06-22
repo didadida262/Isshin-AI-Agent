@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGear,
   faPlus,
-  faSpinner,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ChatSession } from "../types";
@@ -12,7 +11,6 @@ import logo from "../assets/logo.png";
 interface SidebarProps {
   sessions: ChatSession[];
   activeSessionId: string;
-  agentRunning: boolean;
   onSelectSession: (id: string) => void;
   onNewSession: () => void;
   onDeleteSession: (id: string) => void;
@@ -24,7 +22,6 @@ const spring = { type: "spring" as const, stiffness: 400, damping: 30 };
 export function Sidebar({
   sessions,
   activeSessionId,
-  agentRunning,
   onSelectSession,
   onNewSession,
   onDeleteSession,
@@ -117,21 +114,6 @@ export function Sidebar({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
       >
-        <motion.div
-          className="mb-3 flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-xs"
-          animate={agentRunning ? { opacity: [0.7, 1, 0.7] } : { opacity: 1 }}
-          transition={{ repeat: agentRunning ? Infinity : 0, duration: 1.2 }}
-        >
-          <FontAwesomeIcon
-            icon={faSpinner}
-            spin={agentRunning}
-            className={agentRunning ? "text-accent" : "text-text-dim"}
-          />
-          <span className={agentRunning ? "text-accent" : "text-text-muted"}>
-            {agentRunning ? "Agent 运行中" : "Agent 待命"}
-          </span>
-        </motion.div>
-
         <button
           type="button"
           onClick={onOpenSettings}

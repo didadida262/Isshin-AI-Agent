@@ -23,7 +23,6 @@ export function useAppState() {
   const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
   const [selectedModel, setSelectedModel] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [agentRunning, setAgentRunning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [chatMode, setChatMode] = useState<ChatMode>("chat");
@@ -87,7 +86,6 @@ export function useAppState() {
     cancelRef.current = true;
     abortRef.current?.abort();
     setIsLoading(false);
-    setAgentRunning(false);
   }, []);
 
   const sendMessage = useCallback(
@@ -104,7 +102,8 @@ export function useAppState() {
       }
       setConfigError(null);
       cancelRef.current = false;
-      abortRef.current = null;
+      const requestController = new AbortController();
+      abortRef.current = requestController;
 
       const sessionId = activeSessionId;
       const userMsg: ChatMessage = {
@@ -127,7 +126,6 @@ export function useAppState() {
 
       let agentObservation: string | null = null;
 
-      setAgentRunning(true);
       const agentStatusId = uid();
       const showAgentUi = chatMode === "agent";
       if (showAgentUi) {
@@ -139,61 +137,60 @@ export function useAppState() {
         });
       }
 
-      try {
-        const recentForAgent = activeSession.messages
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .slice(-6)
-          .map((m) => m.content);
+      const recentForAgent = activeSession.messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-6)
+        .map((m) => m.content);
 
-        const agentResult = await runAgentLoop(
-          text,
-          (phase, detail) => {
-            if (!showAgentUi) return;
-            const labels: Record<string, string> = {
-              thought: detail ?? "意图识别中…",
-              action:
-                detail
-                  ? `正在执行本地工具：${detail}…`
-                  : "正在访问本地工作区…",
-              observation: "整理观察结果…",
-              done: "Agent 执行完成",
-              idle: "待命",
-            };
-            patchMessage(sessionId, agentStatusId, {
-              agentPhase:
-                phase === "done"
-                  ? "done"
-                  : phase === "observation"
-                    ? "observation"
-                    : phase === "action"
-                      ? "action"
-                      : "thought",
-              content: labels[phase] ?? phase,
-            });
-          },
+      const agentResult = await runAgentLoop(
+        config,
+        selectedModel,
+        text,
+        (phase, detail) => {
+          if (!showAgentUi) return;
+          const labels: Record<string, string> = {
+            thought: detail ?? "意图识别中…",
+            action:
+              detail
+                ? `正在执行本地工具：${detail}…`
+                : "正在访问本地工作区…",
+            observation: "整理观察结果…",
+            done: "Agent 执行完成",
+            idle: "待命",
+          };
+          patchMessage(sessionId, agentStatusId, {
+            agentPhase:
+              phase === "done"
+                ? "done"
+                : phase === "observation"
+                  ? "observation"
+                  : phase === "action"
+                    ? "action"
+                    : "thought",
+            content: labels[phase] ?? phase,
+          });
+        },
           recentForAgent,
+          requestController.signal,
         );
 
-        agentObservation = agentResult.observation;
+      agentObservation = agentResult.observation;
 
-        if (showAgentUi) {
-          if (agentResult.shouldAct || agentObservation) {
-            patchMessage(sessionId, agentStatusId, {
-              agentPhase: "done",
-              content: agentResult.thought ?? "Agent 执行完成",
-            });
-          } else {
-            updateSession(sessionId, (s) => ({
-              ...s,
-              messages: s.messages.filter((m) => m.id !== agentStatusId),
-            }));
-          }
-        } else if (agentResult.shouldAct && !agentObservation) {
-          // 对话模式下触发了工具但未拿到结果，仍提示用户
-          agentObservation = agentResult.thought ?? null;
+      if (showAgentUi) {
+        if (agentResult.shouldAct || agentObservation) {
+          patchMessage(sessionId, agentStatusId, {
+            agentPhase: "done",
+            content: agentResult.thought ?? "Agent 执行完成",
+          });
+        } else {
+          updateSession(sessionId, (s) => ({
+            ...s,
+            messages: s.messages.filter((m) => m.id !== agentStatusId),
+          }));
         }
-      } finally {
-        setAgentRunning(false);
+      } else if (agentResult.shouldAct && !agentObservation) {
+        // 对话模式下触发了工具但未拿到结果，仍提示用户
+        agentObservation = agentResult.thought ?? null;
       }
 
       if (cancelRef.current) {
@@ -245,15 +242,12 @@ export function useAppState() {
       ];
 
       try {
-        const controller = new AbortController();
-        abortRef.current = controller;
-
         let full = "";
         for await (const chunk of streamChatCompletion(
           config,
           selectedModel,
           messages,
-          controller.signal,
+          requestController.signal,
         )) {
           if (cancelRef.current) break;
           full += chunk;
@@ -262,7 +256,7 @@ export function useAppState() {
 
         const wasCancelled =
           cancelRef.current ||
-          controller.signal.aborted;
+          requestController.signal.aborted;
 
         if (wasCancelled && !full.trim()) {
           updateSession(sessionId, (s) => ({
@@ -347,7 +341,6 @@ export function useAppState() {
     setSelectedModel,
     settingsOpen,
     setSettingsOpen,
-    agentRunning,
     isLoading,
     configError,
     setConfigError,
