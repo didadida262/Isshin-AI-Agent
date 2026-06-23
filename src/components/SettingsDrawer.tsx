@@ -10,6 +10,7 @@ import {
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import type { AppConfig } from "../types";
+import { pickDefaultModel } from "../services/config";
 import { testConnection } from "../services/chat";
 import { fetchAvailableModels } from "../services/models";
 
@@ -52,11 +53,15 @@ export function SettingsDrawer({
       const models = await fetchAvailableModels(apiKey);
       setDraft((d) => ({ ...d, models }));
       setModelsStatus("ok");
+      const picked = pickDefaultModel(models);
+      if (picked && (!selectedModel || !models.includes(selectedModel))) {
+        onSelectModel(picked);
+      }
     } catch (e) {
       setModelsStatus("error");
       setModelsError(e instanceof Error ? e.message : String(e));
     }
-  }, []);
+  }, [selectedModel, onSelectModel]);
 
   useEffect(() => {
     if (open) {
@@ -88,7 +93,7 @@ export function SettingsDrawer({
     const remaining = draft.models.filter((m) => m !== id);
     setDraft((d) => ({ ...d, models: remaining }));
     if (id === selectedModel) {
-      onSelectModel(remaining[0] ?? "");
+      onSelectModel(pickDefaultModel(remaining));
     }
   };
 

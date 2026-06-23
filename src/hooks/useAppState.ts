@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppConfig, ChatMessage, ChatMode, ChatSession } from "../types";
-import { loadConfig, saveConfig } from "../services/config";
+import { loadConfig, pickDefaultModel, saveConfig } from "../services/config";
 import { runAgentLoop } from "../agent/graph";
 import { ISSHIN_AGENT_PERSONA } from "../agent/prompt";
 import { streamChatCompletion } from "../services/chat";
@@ -36,7 +36,7 @@ export function useAppState() {
   useEffect(() => {
     loadConfig().then((cfg) => {
       setConfig(cfg);
-      if (cfg.models.length > 0) setSelectedModel(cfg.models[0]);
+      if (cfg.models.length > 0) setSelectedModel(pickDefaultModel(cfg.models));
     });
   }, []);
 
@@ -79,7 +79,7 @@ export function useAppState() {
     setConfig(next);
     await saveConfig(next);
     if (next.models.length > 0 && !next.models.includes(selectedModel)) {
-      setSelectedModel(next.models[0]);
+      setSelectedModel(pickDefaultModel(next.models));
     }
   }, [selectedModel]);
 

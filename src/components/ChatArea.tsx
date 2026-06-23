@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { ChatMessage, ChatMode } from "../types";
+import logo from "../assets/isshin_logo.png";
 import { MessageBubble } from "./MessageBubble";
 import { SmartInput } from "./SmartInput";
 import { LlmConsoleFab } from "./LlmConsoleFab";
@@ -102,11 +103,22 @@ export function ChatArea({
         {messages.length === 0 ? (
           <motion.div
             className="flex h-full flex-col items-center justify-center px-4 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="max-w-md rounded-lg border border-white/10 bg-surface/40 px-8 py-10">
-              <p className="text-lg font-medium text-white">有什么需要帮忙的吗？</p>
+            <motion.img
+              src={logo}
+              alt="Isshin AI Agent"
+              className="mb-8 h-44 w-44 rounded-2xl border border-white/10 object-contain p-2 shadow-[0_0_60px_rgba(59,130,246,0.25)]"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+            />
+            <div className="max-w-md rounded-xl border border-white/10 bg-surface/40 px-8 py-6 backdrop-blur-sm">
+              <p className="text-xl font-semibold text-white">
+                有什么需要帮忙的吗？
+              </p>
             </div>
           </motion.div>
         ) : (

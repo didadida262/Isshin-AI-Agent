@@ -6,7 +6,7 @@ import {
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ChatSession } from "../types";
-import logo from "../assets/logo.png";
+import logo from "../assets/isshin_logo.png";
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -28,7 +28,7 @@ export function Sidebar({
   onOpenSettings,
 }: SidebarProps) {
   return (
-    <aside className="flex h-full w-56 flex-col border-r border-white/5 bg-[#0a0a0a]">
+    <aside className="flex h-full w-72 flex-col border-r border-white/5 bg-[#0a0a0a]">
       <motion.div
         className="flex items-center gap-2 border-b border-white/5 px-4 py-4"
         initial={{ opacity: 0, y: -8 }}
@@ -37,9 +37,9 @@ export function Sidebar({
         <img
           src={logo}
           alt="Isshin AI Agent"
-          className="h-9 w-9 shrink-0 rounded-md border border-white/10 bg-white object-contain p-0.5"
+          className="h-14 w-14 shrink-0 rounded-md border border-white/10 object-contain p-0.5"
         />
-        <span className="min-w-0 flex-1 text-sm font-bold leading-tight tracking-wide text-white">
+        <span className="min-w-0 flex-1 text-lg font-bold leading-tight tracking-wide text-white">
           Isshin AI Agent
         </span>
       </motion.div>
